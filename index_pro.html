@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>World Cup Manager 26 PRO</title>
+
+<style>
+body { background:#0b0f14; color:#eaeaea; font-family:Arial; }
+#corner { position:absolute; top:10px; right:10px; font-size:12px; }
+
+.container { display:flex; gap:20px; padding:20px; }
+
+.panel {
+  background:#121821;
+  padding:15px;
+  border-radius:10px;
+  width:30%;
+  height:500px;
+  overflow:auto;
+}
+
+.player { padding:5px; border-bottom:1px solid #333; cursor:pointer; }
+.selected { background:#1f6feb; }
+
+#pitch {
+  width:500px;
+  height:600px;
+  background:green;
+  position:relative;
+}
+
+.dot {
+  position:absolute;
+  width:10px;
+  height:10px;
+  background:white;
+  border-radius:50%;
+}
+
+.match-log {
+  height:150px;
+  overflow:auto;
+  background:#000;
+  padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="corner">by Nassaax</div>
+
+<h1>World Cup Manager 26 PRO</h1>
+
+<button onclick="startMatch()">▶️ Lancer match</button>
+<select onchange="speed=this.value">
+<option value="1">x1</option>
+<option value="2">x2</option>
+<option value="4">x4</option>
+<option value="0">Résultat direct</option>
+</select>
+
+<div class="container">
+
+<div class="panel" id="playersPanel"></div>
+
+<div id="pitch"></div>
+
+<div class="panel">
+<h3>Match</h3>
+<div id="score">0 - 0</div>
+<div class="match-log" id="log"></div>
+</div>
+
+</div>
+
+<script>
+
+// ================= PLAYERS DB =================
+const players = [
+ {name:"Mbappé", pos:"ST", level:92, pace:97},
+ {name:"Griezmann", pos:"CF", level:88},
+ {name:"Camavinga", pos:"CM", level:86},
+ {name:"Tchouameni", pos:"CM", level:87},
+ {name:"Hernandez", pos:"DF", level:85},
+ {name:"Upamecano", pos:"DF", level:86},
+ {name:"Kounde", pos:"DF", level:85},
+ {name:"Maignan", pos:"GK", level:89}
+];
+
+let squad = [];
+
+// ================= UI =================
+function renderPlayers(){
+ const panel = document.getElementById("playersPanel");
+ panel.innerHTML = "<h3>Joueurs</h3>";
+
+ players.forEach(p=>{
+  const div = document.createElement("div");
+  div.className="player";
+  div.innerText = p.name + " ("+p.pos+")";
+
+  div.onclick=()=>{
+    if(squad.includes(p)){
+      squad = squad.filter(x=>x!==p);
+      div.classList.remove("selected");
+    } else {
+      squad.push(p);
+      div.classList.add("selected");
+    }
+    renderPitch();
+  };
+
+  panel.appendChild(div);
+ });
+}
+
+renderPlayers();
+
+// ================= PITCH =================
+function renderPitch(){
+ const pitch = document.getElementById("pitch");
+ pitch.innerHTML = "";
+
+ squad.forEach((p,i)=>{
+  const d = document.createElement("div");
+  d.className="dot";
+  d.style.left = (50 + i*30)+"px";
+  d.style.top = (50 + i*30)+"px";
+  pitch.appendChild(d);
+ });
+}
+
+// ================= MATCH ENGINE =================
+let scoreA = 0;
+let scoreB = 0;
+let minute = 0;
+let speed = 1;
+let timer;
+
+function log(txt){
+ const l = document.getElementById("log");
+ l.innerHTML += "<div>"+txt+"</div>";
+ l.scrollTop = l.scrollHeight;
+}
+
+function teamStrength(){
+ let total = 0;
+ squad.forEach(p=> total += p.level);
+ return total;
+}
+
+function simulateAction(){
+ let strength = teamStrength();
+
+ if(Math.random() < strength/2000){
+   if(Math.random()>0.5){
+     scoreA++;
+     log("⚽ But équipe A !");
+   } else {
+     scoreB++;
+     log("⚽ But équipe B !");
+   }
+ }
+
+ document.getElementById("score").innerText = scoreA+" - "+scoreB;
+}
+
+function startMatch(){
+
+ if(speed==0){
+   scoreA = Math.floor(Math.random()*4);
+   scoreB = Math.floor(Math.random()*4);
+   document.getElementById("score").innerText = scoreA+" - "+scoreB;
+   return;
+ }
+
+ minute = 0;
+ scoreA = 0;
+ scoreB = 0;
+ document.getElementById("log").innerHTML = "";
+
+ clearInterval(timer);
+
+ timer = setInterval(()=>{
+   minute++;
+
+   simulateAction();
+
+   if(minute==45){
+     log("⏸ Mi-temps");
+   }
+
+   if(minute>=90){
+     clearInterval(timer);
+     log("🏁 Fin du match");
+   }
+
+ }, 1000/speed);
+}
+
+</script>
+
+</body>
+</html>
