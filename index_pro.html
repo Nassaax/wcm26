@@ -2,45 +2,34 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>World Cup Manager 26 PRO</title>
+<title>World Cup Manager 26</title>
 
 <style>
-body { background:#0b0f14; color:#eaeaea; font-family:Arial; }
+body { background:#0b0f14; color:white; font-family:Arial; text-align:center; }
 #corner { position:absolute; top:10px; right:10px; font-size:12px; }
-
-.container { display:flex; gap:20px; padding:20px; }
-
-.panel {
-  background:#121821;
-  padding:15px;
-  border-radius:10px;
-  width:30%;
-  height:500px;
-  overflow:auto;
-}
-
-.player { padding:5px; border-bottom:1px solid #333; cursor:pointer; }
-.selected { background:#1f6feb; }
+button { margin:5px; padding:10px; cursor:pointer; }
 
 #pitch {
-  width:500px;
-  height:600px;
+  width:600px;
+  height:400px;
   background:green;
+  margin:20px auto;
   position:relative;
 }
 
-.dot {
+.player {
   position:absolute;
-  width:10px;
-  height:10px;
-  background:white;
-  border-radius:50%;
+  cursor:grab;
+  font-size:12px;
 }
 
-.match-log {
+.inactive { opacity:0.3; }
+
+#log {
+  background:#000;
   height:150px;
   overflow:auto;
-  background:#000;
+  margin:10px;
   padding:10px;
 }
 </style>
@@ -50,9 +39,10 @@ body { background:#0b0f14; color:#eaeaea; font-family:Arial; }
 
 <div id="corner">by Nassaax</div>
 
-<h1>World Cup Manager 26 PRO</h1>
+<h1>World Cup Manager 26</h1>
 
 <button onclick="startMatch()">▶️ Lancer match</button>
+
 <select onchange="speed=this.value">
 <option value="1">x1</option>
 <option value="2">x2</option>
@@ -60,132 +50,106 @@ body { background:#0b0f14; color:#eaeaea; font-family:Arial; }
 <option value="0">Résultat direct</option>
 </select>
 
-<div class="container">
-
-<div class="panel" id="playersPanel"></div>
+<div id="score">0 - 0</div>
 
 <div id="pitch"></div>
 
-<div class="panel">
-<h3>Match</h3>
-<div id="score">0 - 0</div>
-<div class="match-log" id="log"></div>
-</div>
-
-</div>
+<div id="log"></div>
 
 <script>
 
-// ================= PLAYERS DB =================
 const players = [
- {name:"Mbappé", pos:"ST", level:92, pace:97},
- {name:"Griezmann", pos:"CF", level:88},
- {name:"Camavinga", pos:"CM", level:86},
- {name:"Tchouameni", pos:"CM", level:87},
- {name:"Hernandez", pos:"DF", level:85},
- {name:"Upamecano", pos:"DF", level:86},
- {name:"Kounde", pos:"DF", level:85},
- {name:"Maignan", pos:"GK", level:89}
+ {name:"Mbappé", level:92},
+ {name:"Bellingham", level:91},
+ {name:"Vinicius", level:91},
+ {name:"Messi", level:88}
 ];
 
-let squad = [];
+let selected = null;
 
-// ================= UI =================
-function renderPlayers(){
- const panel = document.getElementById("playersPanel");
- panel.innerHTML = "<h3>Joueurs</h3>";
+function initPitch(){
+ const pitch = document.getElementById("pitch");
+
+ pitch.addEventListener("dragover", e => e.preventDefault());
+
+ pitch.addEventListener("drop", e => {
+  if(selected){
+    selected.style.left = e.offsetX+"px";
+    selected.style.top = e.offsetY+"px";
+  }
+ });
 
  players.forEach(p=>{
-  const div = document.createElement("div");
-  div.className="player";
-  div.innerText = p.name + " ("+p.pos+")";
+  const el = document.createElement("div");
+  el.className="player";
+  el.innerText=p.name;
+  el.draggable=true;
 
-  div.onclick=()=>{
-    if(squad.includes(p)){
-      squad = squad.filter(x=>x!==p);
-      div.classList.remove("selected");
-    } else {
-      squad.push(p);
-      div.classList.add("selected");
-    }
-    renderPitch();
-  };
+  el.onclick=()=>el.classList.toggle("inactive");
 
-  panel.appendChild(div);
+  el.addEventListener("dragstart",()=>selected=el);
+
+  pitch.appendChild(el);
  });
 }
 
-renderPlayers();
+initPitch();
 
-// ================= PITCH =================
-function renderPitch(){
- const pitch = document.getElementById("pitch");
- pitch.innerHTML = "";
-
- squad.forEach((p,i)=>{
-  const d = document.createElement("div");
-  d.className="dot";
-  d.style.left = (50 + i*30)+"px";
-  d.style.top = (50 + i*30)+"px";
-  pitch.appendChild(d);
- });
-}
-
-// ================= MATCH ENGINE =================
-let scoreA = 0;
-let scoreB = 0;
-let minute = 0;
-let speed = 1;
+let scoreA=0;
+let scoreB=0;
+let minute=0;
+let speed=1;
 let timer;
 
-function log(txt){
- const l = document.getElementById("log");
- l.innerHTML += "<div>"+txt+"</div>";
- l.scrollTop = l.scrollHeight;
+function log(text){
+ const el=document.getElementById("log");
+ el.innerHTML+="<div>"+text+"</div>";
+ el.scrollTop=el.scrollHeight;
 }
 
-function teamStrength(){
- let total = 0;
- squad.forEach(p=> total += p.level);
+function teamPower(){
+ let total=0;
+ players.forEach(p=>total+=p.level);
  return total;
 }
 
-function simulateAction(){
- let strength = teamStrength();
+function simulate(){
+ let power=teamPower();
 
- if(Math.random() < strength/2000){
+ if(Math.random()<power/2000){
    if(Math.random()>0.5){
      scoreA++;
-     log("⚽ But équipe A !");
+     log("⚽ But équipe A");
    } else {
      scoreB++;
-     log("⚽ But équipe B !");
+     log("⚽ But équipe B");
    }
  }
 
- document.getElementById("score").innerText = scoreA+" - "+scoreB;
+ document.getElementById("score").innerText=scoreA+" - "+scoreB;
 }
 
 function startMatch(){
 
  if(speed==0){
-   scoreA = Math.floor(Math.random()*4);
-   scoreB = Math.floor(Math.random()*4);
-   document.getElementById("score").innerText = scoreA+" - "+scoreB;
+   scoreA=Math.floor(Math.random()*4);
+   scoreB=Math.floor(Math.random()*4);
+   document.getElementById("score").innerText=scoreA+" - "+scoreB;
    return;
  }
 
- minute = 0;
- scoreA = 0;
- scoreB = 0;
- document.getElementById("log").innerHTML = "";
+ scoreA=0;
+ scoreB=0;
+ minute=0;
+
+ document.getElementById("log").innerHTML="";
 
  clearInterval(timer);
 
- timer = setInterval(()=>{
+ timer=setInterval(()=>{
    minute++;
 
-   simulateAction();
+   simulate();
 
    if(minute==45){
      log("⏸ Mi-temps");
@@ -196,7 +160,7 @@ function startMatch(){
      log("🏁 Fin du match");
    }
 
- }, 1000/speed);
+ },1000/speed);
 }
 
 </script>
