@@ -1,1 +1,0 @@
-export default function Home(){return (<div>WC26 Manager</div>)}
